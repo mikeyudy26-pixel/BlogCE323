@@ -1,0 +1,52 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ed1c24" />
+  <meta name="description" content="Ideias, descobertas e criações dos alunos do SESI." />
+  <title>Vozes do SESI | Ideias que inspiram</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#inicio" aria-label="Vozes do SESI, início">
+      <span class="sesi-logo" aria-label="SESI"><img src="sesi-logo.svg" alt="SESI" /></span>
+      <span class="brand-copy"><strong>VOZES DO SESI</strong><small>IDEIAS QUE INSPIRAM</small></span>
+    </a>
+    <nav aria-label="Navegação principal"><a class="nav-link active" href="#inicio">Início</a><a class="nav-link" href="#publicacoes">Publicações</a></nav>
+    <div class="header-actions"><button class="theme-button" id="theme-toggle" type="button" aria-label="Ativar modo escuro" title="Ativar modo escuro"><span id="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Modo escuro</span></button><button class="header-button" data-open-form><span>＋</span> Compartilhe sua ideia</button><button class="admin-button" id="admin-button" type="button">Admin</button></div>
+  </header>
+
+  <main id="inicio">
+    <section class="hero">
+      <div class="hero-copy"><span class="eyebrow"><i></i> O BLOG DOS ALUNOS DO SESI</span><h1>Ideias que<br />merecem ser <em>compartilhadas.</em></h1><p>Um espaço feito por estudantes, para estudantes. Mostre o que você cria, aprende e imagina.</p><a class="hero-button" href="#publicacoes">Explorar publicações <span>↓</span></a></div>
+      <div class="hero-art" aria-label="Ilustração de ideias estudantis"><div class="art-ring"></div><span class="art-spark spark-one">✳</span><span class="art-spark spark-two">✦</span><div class="art-note note-back"><span>IDEIA<br />BOA É<br />IDEIA<br />COMPARTILHADA.</span></div><div class="art-note note-front"><span class="note-label">CADERNO DE IDEIAS</span><span class="note-doodle">✎</span><span class="note-lines"></span><span class="note-lines short"></span><span class="note-mark">feito por você <b>♥</b></span></div><div class="art-sticker">SUA<br />VOZ<br /><b>IMPORTA</b></div></div>
+      <div class="hero-index"><span>01</span><i></i><span>UM ESPAÇO PARA CRIAR</span></div>
+    </section>
+
+    <section class="feed-section" id="publicacoes">
+      <div class="section-heading"><div><span class="eyebrow section-eyebrow">O QUE A GENTE ANDA FAZENDO</span><h2>Ideias em <em>movimento.</em></h2></div><button class="write-button" data-open-form><span>＋</span> Fazer uma publicação</button></div>
+      <div class="feed-toolbar"><div class="feed-label"><span class="feed-dot"></span> PUBLICAÇÕES DA COMUNIDADE <span class="post-count" id="post-count">0</span></div><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search-posts" type="search" placeholder="Buscar uma ideia..." aria-label="Buscar publicações" /></div></div>
+      <div class="post-grid" id="post-grid" aria-live="polite"></div>
+      <div class="community-note"><div class="note-heart">♥</div><p><strong>Toda ideia começa com alguém que resolveu compartilhar.</strong><br />A próxima pode ser a sua.</p><button data-open-form>Compartilhe com a gente <span>↗</span></button></div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><a class="footer-brand" href="#inicio"><span class="sesi-logo small" aria-label="SESI"><img src="sesi-logo.svg" alt="SESI" /></span> VOZES DO SESI</a><span>Um espaço de criação e troca entre estudantes.</span><a href="#inicio">VOLTAR AO TOPO ↑</a></footer>
+
+  <div class="modal-backdrop" id="post-modal" aria-hidden="true"><section class="post-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><div><span class="eyebrow section-eyebrow">SUA VOZ FAZ PARTE</span><h2 id="modal-title">Compartilhe sua ideia.</h2></div><button class="close-button" type="button" data-close aria-label="Fechar">×</button></div><p class="modal-intro">Um projeto, uma descoberta ou algo que te inspira: queremos ver.</p><form id="post-form"><label class="photo-drop" for="post-image" id="photo-drop"><span class="upload-icon">↥</span><strong id="media-prompt">Escolha uma foto ou vídeo para sua publicação</strong><small id="media-help">Fotos até 5 MB · vídeos até 3 minutos e 500 MB</small><img id="image-preview" alt="Prévia da imagem escolhida" /><video id="video-preview" controls playsinline></video></label><input id="post-image" type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/ogg,video/quicktime" /><label class="form-label">Seu nome <span>(ou como quer aparecer)</span><input id="post-author" type="text" maxlength="50" placeholder="Ex.: Ana, do 2º ano" required /></label><label class="form-label">Título da publicação<input id="post-title" type="text" maxlength="90" placeholder="Dê um nome para sua ideia" required /></label><label class="form-label">Descrição<textarea id="post-description" rows="4" maxlength="500" placeholder="Conte um pouco sobre o que você fez, aprendeu ou imaginou..." required></textarea><small class="char-count"><span id="char-count">0</span>/500</small></label><p class="form-date">A publicação será marcada com a data de hoje: <strong id="today-date"></strong></p><div class="form-actions"><button class="cancel-button" type="button" data-close>Cancelar</button><button class="submit-button" type="submit">Publicar no blog <span>↗</span></button></div></form></section></div>
+  <div class="modal-backdrop" id="student-login-modal" aria-hidden="true"><section class="post-modal" role="dialog" aria-modal="true" aria-labelledby="student-login-title"><div class="modal-heading"><div><span class="eyebrow section-eyebrow">COMUNIDADE SESI</span><h2 id="student-login-title">Entre para publicar.</h2></div><button class="close-button" type="button" data-close aria-label="Fechar">×</button></div><p class="modal-intro">Faça login como aluno para compartilhar sua ideia. As publicações continuam abertas para todos.</p><form id="student-login-form"><label class="form-label">Login<input id="student-login" name="username" type="text" autocomplete="username" required /></label><label class="form-label">Senha<input id="student-password" name="password" type="password" autocomplete="current-password" required /></label><p class="login-error" id="student-login-error" role="alert"></p><div class="form-actions"><button class="cancel-button" type="button" data-close>Cancelar</button><button class="submit-button" type="submit">Entrar <span>↗</span></button></div></form></section></div>
+  <div class="modal-backdrop" id="reading-modal" aria-hidden="true"><article class="reading-modal" role="dialog" aria-modal="true" aria-labelledby="reading-title"><button class="close-button reading-close" type="button" data-close-reading aria-label="Fechar publicação">×</button><div id="reading-media" class="reading-media"></div><div class="reading-content"><div class="post-meta"><span class="post-date" id="reading-date"></span><span class="post-author" id="reading-author"></span></div><h2 id="reading-title"></h2><p id="reading-description"></p></div></article></div>
+  <div class="modal-backdrop" id="admin-modal" aria-hidden="true"><section class="post-modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title"><div class="modal-heading"><div><span class="eyebrow section-eyebrow">ÁREA RESTRITA</span><h2 id="admin-title">Painel do admin.</h2></div><button class="close-button" type="button" data-close aria-label="Fechar">×</button></div><p class="modal-intro">Entre para editar ou remover publicações do blog.</p><form id="admin-form"><label class="form-label">Login<input id="admin-login" name="username" type="text" autocomplete="username" required /></label><label class="form-label">Senha<input id="admin-password" name="password" type="password" autocomplete="current-password" required /></label><p class="login-error" id="login-error" role="alert"></p><div class="form-actions"><button class="cancel-button" type="button" data-close>Cancelar</button><button class="submit-button" type="submit">Entrar <span>↗</span></button></div></form></section></div>
+  <div class="confirm-backdrop" id="delete-modal" aria-hidden="true"><section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title"><h2 id="delete-title">Remover publicação?</h2><p>Esta ação não poderá ser desfeita.</p><div class="confirm-actions"><button class="cancel-button" id="cancel-delete" type="button">Cancelar</button><button class="delete-confirm-button" id="confirm-delete" type="button">Remover</button></div></section></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
