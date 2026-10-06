@@ -1,9 +1,8 @@
-﻿const STORAGE_KEY = 'vozes-sesi-publications-v1';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
 const MAX_VIDEO_DURATION = 180;
 const THEME_KEY = 'vozes-sesi-theme-v1';
-let posts = loadPosts();
+let posts = [];
 let selectedImage = '';
 let selectedMediaType = 'image';
 let selectedMediaFile = null;
@@ -13,6 +12,18 @@ let isAdmin = false;
 let isStudentLoggedIn = false;
 let deleteTargetId = null;
 
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || 'N?o foi poss?vel completar a solicita??o.');
+  return body;
+}
+
+async function refreshPosts() {
+  posts = await apiRequest('/api/posts');
+  renderPosts(document.querySelector('#search-posts').value);
+}
+
 function setStudentLoginModal(open) {
   const modal = document.querySelector('#student-login-modal');
   modal.classList.toggle('open', open);
@@ -20,7 +31,7 @@ function setStudentLoginModal(open) {
   if (open) window.setTimeout(() => document.querySelector('#student-login').focus(), 50);
 }
 
-function requestPostForm() {
+async function requestPostForm() {
   if (isStudentLoggedIn) setModal(true);
   else {
     document.querySelector('#student-login-error').textContent = '';
@@ -58,15 +69,6 @@ function closeReadingView() {
   modal.setAttribute('aria-hidden', 'true');
   modal.querySelector('#reading-media').innerHTML = '';
   document.body.classList.remove('modal-open');
-}
-
-function loadPosts() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
 }
 
 function localDate(date = new Date()) {
@@ -267,22 +269,23 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-document.querySelector('#student-login-form').addEventListener('submit', (event) => {
+document.querySelector('#student-login-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const username = document.querySelector('#student-login').value.trim();
-  const password = document.querySelector('#student-password').value;
-  if (username !== 'aluno' || password !== 'aluno123') {
-    document.querySelector('#student-login-error').textContent = 'Login ou senha incorretos.';
-    return;
-  }
-  isStudentLoggedIn = true;
-  setStudentLoginModal(false);
-  setModal(true);
+  try {
+    const result = await apiRequest('/api/auth', { method: 'POST', body: JSON.stringify({ username: document.querySelector('#student-login').value.trim(), password: document.querySelector('#student-password').value }) });
+    isStudentLoggedIn = result.role === 'student' || result.role === 'admin';
+    isAdmin = result.role === 'admin';
+    updateAdminButton();
+    setStudentLoginModal(false);
+    setModal(true);
+  } catch (error) { document.querySelector('#student-login-error').textContent = error.message; }
 });
 
 document.querySelector('#admin-button').addEventListener('click', () => {
   if (isAdmin) {
     isAdmin = false;
+    isStudentLoggedIn = false;
+    apiRequest('/api/auth', { method: 'DELETE' }).catch(() => {});
     updateAdminButton();
     renderPosts(document.querySelector('#search-posts').value);
     showToast('VocÃª saiu do painel de administraÃ§Ã£o.');
@@ -293,19 +296,17 @@ document.querySelector('#admin-button').addEventListener('click', () => {
   setAdminModal(true);
 });
 
-document.querySelector('#admin-form').addEventListener('submit', (event) => {
+document.querySelector('#admin-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const login = document.querySelector('#admin-login').value;
-  const password = document.querySelector('#admin-password').value;
-  if (login !== 'admin' || password !== 'admin123') {
-    document.querySelector('#login-error').textContent = 'Login ou senha incorretos.';
-    return;
-  }
-  isAdmin = true;
-  updateAdminButton();
-  setAdminModal(false);
-  renderPosts(document.querySelector('#search-posts').value);
-  showToast('Painel de administraÃ§Ã£o aberto.');
+  try {
+    const result = await apiRequest('/api/auth', { method: 'POST', body: JSON.stringify({ username: document.querySelector('#admin-login').value, password: document.querySelector('#admin-password').value }) });
+    isAdmin = result.role === 'admin';
+    isStudentLoggedIn = isAdmin;
+    updateAdminButton();
+    setAdminModal(false);
+    renderPosts(document.querySelector('#search-posts').value);
+    showToast('Painel de administra??o aberto.');
+  } catch (error) { document.querySelector('#login-error').textContent = error.message; }
 });
 
 document.querySelector('#cancel-delete').addEventListener('click', () => {
@@ -320,21 +321,15 @@ document.querySelector('#delete-modal').addEventListener('click', (event) => {
   }
 });
 
-document.querySelector('#confirm-delete').addEventListener('click', () => {
+document.querySelector('#confirm-delete').addEventListener('click', async () => {
   if (!isAdmin || !deleteTargetId) return;
-  const previousPosts = posts;
-  posts = posts.filter((post) => post.id !== deleteTargetId);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-  } catch {
-    posts = previousPosts;
-    showToast('NÃ£o foi possÃ­vel salvar a alteraÃ§Ã£o.');
-    return;
-  }
-  deleteTargetId = null;
-  setDeleteModal(false);
-  renderPosts(document.querySelector('#search-posts').value);
-  showToast('PublicaÃ§Ã£o removida.');
+    await apiRequest('/api/posts/' + encodeURIComponent(deleteTargetId), { method: 'DELETE' });
+    deleteTargetId = null;
+    setDeleteModal(false);
+    await refreshPosts();
+    showToast('Publica??o removida.');
+  } catch (error) { showToast(error.message); }
 });
 
 document.querySelector('#search-posts').addEventListener('input', (event) => renderPosts(event.target.value));
@@ -399,79 +394,62 @@ document.querySelector('#post-image').addEventListener('change', (event) => {
     event.target.value = '';
     return;
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    selectedImage = String(reader.result);
-    const drop = document.querySelector('#photo-drop');
-    drop.classList.add('has-image');
-    document.querySelector('#image-preview').src = selectedImage;
-  };
-  reader.readAsDataURL(file);
+  if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+  mediaPreviewUrl = URL.createObjectURL(file);
+  selectedImage = mediaPreviewUrl;
+  const drop = document.querySelector('#photo-drop');
+  drop.classList.add('has-image');
+  document.querySelector('#image-preview').src = selectedImage;
 });
 
-document.querySelector('#post-form').addEventListener('submit', (event) => {
+document.querySelector('#post-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const previousPosts = posts;
-  const newPost = {
-    id: editingPostId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
-    author: document.querySelector('#post-author').value.trim(),
-    title: document.querySelector('#post-title').value.trim(),
-    description: document.querySelector('#post-description').value.trim(),
-    image: selectedMediaFile ? '' : selectedImage || (editingPostId ? posts.find((post) => post.id === editingPostId)?.image : '') || '',
-    type: selectedMediaType,
-    date: editingPostId ? posts.find((post) => post.id === editingPostId)?.date || localDate() : localDate(),
-    timestamp: editingPostId ? posts.find((post) => post.id === editingPostId)?.timestamp || Date.now() : Date.now(),
-  };
-  const completePost = (imageData) => {
-    newPost.image = imageData || selectedImage || (editingPostId ? posts.find((post) => post.id === editingPostId)?.image : '') || '';
-    savePost(newPost, previousPosts);
-  };
-  if (selectedMediaFile && selectedMediaType === 'video') {
-    if (selectedImage !== 'validated-video') {
-      showToast('Aguarde a prÃ©via do vÃ­deo carregar e tente novamente.');
-      return;
+  const submit = document.querySelector('#post-form .submit-button');
+  submit.disabled = true;
+  const oldPost = posts.find((post) => post.id === editingPostId);
+  try {
+    let mediaUrl = selectedMediaFile ? '' : selectedImage || oldPost?.image || '';
+    if (selectedMediaFile) {
+      submit.textContent = 'Enviando m?dia?';
+      submit.textContent = 'Preparando envio...';
+      const { uploadUrl, fileUrl } = await apiRequest('/api/upload', {
+        method: 'POST',
+        body: JSON.stringify({ size: selectedMediaFile.size, type: selectedMediaType, contentType: selectedMediaFile.type }),
+      });
+      const uploadResponse = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': selectedMediaFile.type }, body: selectedMediaFile });
+      if (!uploadResponse.ok) throw new Error('O envio da mídia falhou. Confira a configuração CORS do bucket.');
+      mediaUrl = fileUrl;
     }
-    const reader = new FileReader();
-    reader.onload = () => completePost(String(reader.result));
-    reader.onerror = () => showToast('NÃ£o foi possÃ­vel carregar o vÃ­deo.');
-    reader.readAsDataURL(selectedMediaFile);
-    return;
+    const publication = {
+      author: document.querySelector('#post-author').value.trim(),
+      title: document.querySelector('#post-title').value.trim(),
+      description: document.querySelector('#post-description').value.trim(),
+      type: selectedMediaType,
+      image: mediaUrl,
+    };
+    const url = editingPostId ? '/api/posts/' + encodeURIComponent(editingPostId) : '/api/posts';
+    const saved = await apiRequest(url, { method: editingPostId ? 'PUT' : 'POST', body: JSON.stringify(publication) });
+    if (editingPostId) posts = posts.map((post) => post.id === editingPostId ? saved : post);
+    else posts.unshift(saved);
+    renderPosts(document.querySelector('#search-posts').value);
+    const wasEditing = Boolean(editingPostId);
+    resetPostForm();
+    setModal(false);
+    document.querySelector('#publicacoes').scrollIntoView({ behavior: 'smooth' });
+    showToast(wasEditing ? 'Altera??es salvas.' : 'Publica??o compartilhada. Valeu por participar!');
+  } catch (error) { showToast(error.message); }
+  finally {
+    submit.disabled = false;
+    submit.innerHTML = editingPostId ? 'Salvar altera??es <span>?</span>' : 'Publicar no blog <span>?</span>';
   }
-  if (selectedMediaFile && selectedMediaType === 'image') {
-    const reader = new FileReader();
-    reader.onload = () => completePost(String(reader.result));
-    reader.onerror = () => showToast('NÃ£o foi possÃ­vel carregar a imagem.');
-    reader.readAsDataURL(selectedMediaFile);
-    return;
-  }
-  completePost();
 });
 
-function savePost(newPost, previousPosts) {
-  if (editingPostId && isAdmin) {
-    posts = posts.map((post) => post.id === editingPostId ? { ...post, ...newPost, id: editingPostId } : post);
-  } else {
-    posts.unshift(newPost);
-  }
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-  } catch {
-    posts = previousPosts;
-    showToast('O armazenamento do navegador estÃ¡ cheio. Tente uma foto menor.');
-    return;
-  }
-  renderPosts(document.querySelector('#search-posts').value);
-  const wasEditing = Boolean(editingPostId);
-  resetPostForm();
-  setModal(false);
-  document.querySelector('#publicacoes').scrollIntoView({ behavior: 'smooth' });
-  showToast(wasEditing ? 'AlteraÃ§Ãµes salvas.' : 'PublicaÃ§Ã£o compartilhada. Valeu por participar!');
-}
-
-renderPosts();
-
-
-
-
-
-
+apiRequest('/api/auth').then(({ role }) => {
+  isAdmin = role === 'admin';
+  isStudentLoggedIn = role === 'student' || isAdmin;
+  updateAdminButton();
+}).catch(() => {});
+refreshPosts().catch((error) => {
+  document.querySelector('#post-grid').innerHTML = '<div class="empty-state"><h3>As publica??es n?o carregaram.</h3><p>Configure o banco de dados e tente novamente.</p></div>';
+  console.error(error);
+});
